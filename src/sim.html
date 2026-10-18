@@ -1,0 +1,165 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<style>
+  html, body {
+    margin: 0; padding: 0; height: 100%; width: 100%;
+    background: transparent !important; overflow: hidden;
+  }
+  body { font-family: "Segoe UI", Arial, sans-serif; background: var(--svo-bg, transparent) !important; }
+  #chat {
+    height: 100%; overflow-y: auto; box-sizing: border-box;
+    padding: 4px 8px 12px 2px; scrollbar-width: none;
+  }
+  #chat::-webkit-scrollbar { width: 0; height: 0; }
+  .msg {
+    display: grid;
+    grid-template-columns: 48px 20px minmax(0, 1fr);
+    column-gap: 8px;
+    align-items: start;
+    margin-bottom: 9px;
+    animation: fadein .18s ease-out;
+  }
+  @keyframes fadein { from { opacity: 0; transform: translateY(3px); } to { opacity: 1; transform: none; } }
+  .time {
+    color: rgba(240, 232, 218, 0.42);
+    font-size: 13px; line-height: 20px;
+    text-align: right; font-variant-numeric: tabular-nums;
+    white-space: nowrap;
+  }
+  .icon {
+    width: 20px; height: 20px; border-radius: 50%;
+    display: block; object-fit: contain;
+    margin-top: 0;
+  }
+  .body {
+    min-width: 0;
+    background: var(--svo-box, transparent);
+    border-radius: 6px;
+    padding: 2px 6px;
+    margin: -2px -6px;
+  }
+  .name { color: var(--svo-name, #D9A85F); font-weight: 600; font-size: 15px; }
+  .text {
+    color: var(--svo-text, #F0E8DA); font-size: 15px; line-height: 20px;
+    overflow-wrap: anywhere;
+  }
+  .text.fresh { color: #ffffff; }
+</style>
+</head>
+<body>
+<div id="chat"></div>
+<script>
+  const PLATFORMS = [
+    'twitch', 'youtube', 'vk', 'telegram', 'trovo', 'kick', 'vkplay'
+  ];
+
+  const USERS = [
+    'admin', 'Kabanchik', 'Nerual_Dreming', 'xX_Sanya_Xx', 'kotik_2007',
+    'Vitalya', 'm1shka', 'Ded_Mazay', 'lolka', 'Zhenya',
+    'pixel_dust', 'Toha', 'Milana', 'sergey_k', 'Barsik',
+    'n0va', 'Grisha', 'Lena', 'max_power', 'Dima'
+  ];
+
+  const TEXTS = [
+    'привет, что за игра?',
+    'опять гта, классика',
+    'давай на мотоцикле с горы',
+    'чат, он тебя видит',
+    'это лучший стрим за неделю',
+    'какой фпс?',
+    'го угонять тачку',
+    'полиция сзади!!',
+    'ахахахах разбился',
+    'сколько тебе лет?',
+    'сделай сальто',
+    'переключи на первую передачу',
+    'я тут впервые, привет всем',
+    'стрим топ, подписался',
+    'что по графике?',
+    'врубай ночной город',
+    'ты играешь в онлайне?',
+    'чат, спамьте хагги',
+    'ладно, я спать, всем пока',
+    'го ещё один заезд'
+  ];
+
+  const LONG_TEXTS = [
+    'Чат, я тут первый раз, подскажите, как тут вообще всё устроено. Что нужно сделать, чтобы получить права модератора?',
+    'Слушай, а почему ты не стримишь на двух платформах одновременно? Так зрителей было бы больше, да и чат интереснее. Я сам так делаю уже полгода, и разница очень заметна.',
+    'Я посмотрел твой прошлый стрим, там была классная погоня на трассе. Жаль, что запись обрезалась на самом интересном моменте. Может, в этот раз запишешь полностью?',
+    'Народ, кто ещё смотрит с телефона? У меня на мобильном почему-то лагает картинка, хотя интернет нормальный. Подскажите, какие настройки качества поставить, чтобы не фризило.',
+    'Кстати, по поводу вчерашнего разговора: я всё-таки купил эту машину. Впечатления смешанные, но в целом доволен. Позже скину фото в дискорд, если интересно.',
+    'Объясните, пожалуйста, новичку: тут можно как-то отправить донат с сообщением? Я хочу поддержать стрим, но не разберусь, где это делается. Заранее спасибо.',
+    'Я вот думаю, а не попробовать ли стримить самому. Подскажи, сколько времени у тебя уходит на подготовку к эфиру? И что нужно купить из оборудования в первую очередь?',
+    'Чат, а давайте устроим челлендж: если наберём сто сообщений за минуту, он поедет на машине без дверей. Я первый начинаю, поехали!'
+  ];
+  let longCounter = 0;
+
+  const chat = document.getElementById('chat');
+  let textIndex = 0;
+
+  function pad(n) { return n < 10 ? '0' + n : String(n); }
+
+  function addMessage() {
+    const platform = PLATFORMS[Math.floor(Math.random() * PLATFORMS.length)];
+    const user = USERS[Math.floor(Math.random() * USERS.length)];
+    const useLong = longCounter % 3 === 0;
+    const text = useLong
+      ? LONG_TEXTS[Math.floor(longCounter / 3) % LONG_TEXTS.length]
+      : TEXTS[textIndex % TEXTS.length];
+    if (!useLong) textIndex += 1;
+    longCounter += 1;
+
+    const now = new Date();
+    const time = pad(now.getHours()) + ':' + pad(now.getMinutes());
+
+    const row = document.createElement('div');
+    row.className = 'msg';
+
+    const t = document.createElement('div');
+    t.className = 'time';
+    t.textContent = time;
+
+    const icon = document.createElement('img');
+    icon.className = 'icon';
+    icon.src = '../assets/platforms/' + platform + '.svg';
+    icon.alt = '';
+    icon.draggable = false;
+
+    const body = document.createElement('div');
+    body.className = 'body';
+
+    const name = document.createElement('span');
+    name.className = 'name';
+    name.textContent = user;
+
+    const textEl = document.createElement('span');
+    textEl.className = 'text';
+    textEl.textContent = text;
+
+    body.appendChild(name);
+    body.appendChild(document.createTextNode(': '));
+    body.appendChild(textEl);
+
+    row.appendChild(t);
+    row.appendChild(icon);
+    row.appendChild(body);
+    chat.appendChild(row);
+
+    while (chat.children.length > 80) chat.removeChild(chat.firstChild);
+    chat.scrollTop = chat.scrollHeight;
+  }
+
+  addMessage();
+  addMessage();
+  addMessage();
+
+  (function loop() {
+    const delay = 900 + Math.random() * 1100;
+    setTimeout(() => { addMessage(); loop(); }, delay);
+  })();
+</script>
+</body>
+</html>

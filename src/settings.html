@@ -1,0 +1,452 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<title>StreamVi Chat Overlay — настройки</title>
+<style>
+  :root {
+    --bg: #12121a;
+    --card: #1b1b26;
+    --line: #2c2c3b;
+    --text: #f0e8da;
+    --muted: #9a94a8;
+    --accent: #9b5cf6;
+    --accent-2: #7c3aed;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    padding: 18px 20px 28px;
+    background: var(--bg);
+    color: var(--text);
+    font: 14px/1.45 "Segoe UI", Arial, sans-serif;
+  }
+  h1 { font-size: 18px; margin: 0 0 4px; font-weight: 650; }
+  .sub { color: var(--muted); font-size: 12px; margin-bottom: 18px; }
+  .card {
+    background: var(--card);
+    border: 1px solid var(--line);
+    border-radius: 10px;
+    padding: 14px;
+    margin-bottom: 14px;
+  }
+  label.title { display: block; font-weight: 600; margin-bottom: 8px; }
+  textarea {
+    width: 100%;
+    height: 92px;
+    resize: vertical;
+    background: #0e0e15;
+    color: var(--text);
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    padding: 10px;
+    font: 12px/1.4 Consolas, "Courier New", monospace;
+    word-break: break-all;
+  }
+  textarea:focus { outline: none; border-color: var(--accent); }
+  .presets { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 10px; }
+  button {
+    background: #262634;
+    color: var(--text);
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    padding: 8px 12px;
+    font: 13px "Segoe UI", Arial, sans-serif;
+    cursor: pointer;
+  }
+  button:hover { border-color: var(--accent); }
+  button.primary {
+    background: linear-gradient(180deg, var(--accent), var(--accent-2));
+    border-color: transparent;
+    font-weight: 600;
+  }
+  button.primary:hover { filter: brightness(1.08); }
+  button.danger { color: #ff9d9d; }
+  .row { display: flex; align-items: center; gap: 10px; }
+  .check { display: flex; gap: 10px; align-items: flex-start; }
+  .check input { margin-top: 3px; accent-color: var(--accent); }
+  .hint { color: var(--muted); font-size: 12px; margin-top: 8px; }
+  input[type="range"] { width: 100%; accent-color: var(--accent); }
+  input[type="text"] {
+    background: #0e0e15; color: var(--text);
+    border: 1px solid var(--line); border-radius: 8px;
+    padding: 7px 10px; font: 12px Consolas, "Courier New", monospace;
+    min-width: 0;
+  }
+  select {
+    background: #0e0e15; color: var(--text);
+    border: 1px solid var(--line); border-radius: 8px;
+    padding: 7px 10px; font: 13px "Segoe UI", Arial, sans-serif;
+    min-width: 150px;
+  }
+  select:focus { outline: none; border-color: var(--accent); }
+  .line { display: flex; align-items: center; gap: 10px; margin-bottom: 10px; }
+  .line > label:first-child { width: 150px; color: var(--muted); }
+  input[type="color"] {
+    width: 40px; height: 28px; padding: 0; border: 1px solid var(--line);
+    background: #0e0e15; border-radius: 6px; cursor: pointer;
+  }
+  input[type="color"]::-webkit-color-swatch-wrapper { padding: 2px; }
+  input[type="color"]::-webkit-color-swatch { border: none; border-radius: 4px; }
+  .value { min-width: 44px; text-align: right; color: var(--muted); font-variant-numeric: tabular-nums; }
+  kbd {
+    background: #0e0e15;
+    border: 1px solid var(--line);
+    border-bottom-width: 2px;
+    border-radius: 5px;
+    padding: 1px 6px;
+    font: 12px Consolas, monospace;
+    color: var(--text);
+  }
+  table.keys { width: 100%; border-collapse: collapse; }
+  table.keys td { padding: 6px 0; border-bottom: 1px solid var(--line); }
+  table.keys tr:last-child td { border-bottom: none; }
+  table.keys td:first-child { color: var(--muted); }
+  .actions { display: flex; gap: 8px; flex-wrap: wrap; }
+  .status { min-height: 20px; margin-top: 12px; font-size: 13px; color: #9ef0a0; }
+  .status.err { color: #ff9d9d; }
+</style>
+</head>
+<body>
+  <h1>StreamVi Chat Overlay</h1>
+  <div class="sub">Прозрачный чат поверх любой игры. Клики проходят в игру, когда оверлей заблокирован.</div>
+
+  <div class="card">
+    <label class="title" for="url">Ссылка на чат StreamVi</label>
+    <textarea id="url" spellcheck="false"></textarea>
+    <div class="presets">
+      <button data-preset="stream_widget">Как в эфире (без поля ввода)</button>
+      <button data-preset="standalone_dark">Standalone (тёмный)</button>
+      <button data-preset="widget_input">С полем ввода</button>
+      <button data-preset="standalone_white">Standalone (белый)</button>
+    </div>
+    <div class="hint">Можно вставить любой другой URL виджета. Параметры прозрачности и масштаба берутся из ссылки.</div>
+  </div>
+
+  <div class="card">
+    <div class="check">
+      <input type="checkbox" id="protect">
+      <div>
+        <label for="protect"><b>Не показывать оверлей в захвате экрана</b></label>
+        <div class="hint">Оверлей не попадёт в OBS (Display Capture), Discord и записи экрана. Выключи, если хочешь, чтобы зрители видели чат на стриме.</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <label class="title" for="opacity">Прозрачность окна</label>
+    <div class="row">
+      <input type="range" id="opacity" min="20" max="100" step="5">
+      <span class="value" id="opacityValue">100%</span>
+    </div>
+  </div>
+
+  <div class="card">
+    <label class="title" for="scale">Масштаб чата</label>
+    <div class="row">
+      <input type="range" id="scale" min="80" max="250" step="5">
+      <span class="value" id="scaleValue">149%</span>
+    </div>
+    <div class="hint">Ctrl+Alt+= / Ctrl+Alt+-. Кнопки A− / A+ есть на полосе оверлея в режиме редактирования.</div>
+  </div>
+
+  <div class="card">
+    <label class="title">Вид чата</label>
+    <div class="check" style="margin-bottom:8px"><input type="checkbox" id="showTime"><div><label for="showTime">Показывать время</label></div></div>
+    <div class="check" style="margin-bottom:8px"><input type="checkbox" id="showIcons"><div><label for="showIcons">Показывать иконки платформ</label></div></div>
+    <div class="check" style="margin-bottom:8px"><input type="checkbox" id="showNames"><div><label for="showNames">Показывать ники</label></div></div>
+    <div class="check" style="margin-bottom:8px"><input type="checkbox" id="showSound"><div><label for="showSound">Звук новых сообщений</label></div></div>
+    <div class="line" style="margin-bottom:12px">
+      <label for="soundFile">Файл звука</label>
+      <input type="text" id="soundFile" readonly placeholder="встроенный звук StreamVi" style="flex:1">
+      <button id="pickSound">Выбрать</button>
+      <button id="testSound">Тест</button>
+    </div>
+
+    <div class="line">
+      <label for="theme">Тема сообщений</label>
+      <select id="theme">
+        <option value="compact">Компактная</option>
+        <option value="boxed">В блоках</option>
+      </select>
+    </div>
+    <div class="line">
+      <label for="align">Выравнивание</label>
+      <select id="align">
+        <option value="top">Сверху</option>
+        <option value="bottom">Снизу</option>
+      </select>
+    </div>
+    <div class="line">
+      <label for="animation">Анимация</label>
+      <select id="animation">
+        <option value="none">Без анимации</option>
+        <option value="fade">Плавное появление</option>
+      </select>
+    </div>
+    <div class="line">
+      <label for="margin">Отступ между сообщениями</label>
+      <input type="range" id="margin" min="0" max="40" step="2" style="flex:1">
+      <span class="value" id="marginValue">10</span>
+    </div>
+    <div class="hint">Время, иконки и ники применяются сразу. Тема, выравнивание, анимация и отступ — к реальному чату.</div>
+  </div>
+
+  <div class="card">
+    <label class="title">Цвета</label>
+    <div class="line">
+      <label for="textColor">Текст</label>
+      <input type="color" id="textColor" value="#f0e8da">
+      <label for="nameColor" style="width:auto">Ник</label>
+      <input type="color" id="nameColor" value="#d9a85f">
+    </div>
+    <div class="line">
+      <label for="boxColor">Фон сообщений</label>
+      <input type="color" id="boxColor" value="#000000">
+      <input type="range" id="boxAlpha" min="0" max="100" step="5" style="flex:1">
+      <span class="value" id="boxAlphaValue">0%</span>
+    </div>
+    <div class="line">
+      <label for="chatColor">Фон чата</label>
+      <input type="color" id="chatColor" value="#141414">
+      <input type="range" id="chatAlpha" min="0" max="100" step="5" style="flex:1">
+      <span class="value" id="chatAlphaValue">0%</span>
+    </div>
+    <div class="hint">Фон сообщений — плашка под каждым сообщением, фон чата — подложка под всем чатом. Прозрачность 0% — полностью прозрачно.</div>
+  </div>
+
+  <div class="card">
+    <label class="title">Горячие клавиши (работают из игры)</label>
+    <table class="keys">
+      <tr><td>Заблокировать / разблокировать</td><td><kbd>Ctrl</kbd> + <kbd>Alt</kbd> + <kbd>L</kbd></td></tr>
+      <tr><td>Показать / скрыть оверлей</td><td><kbd>Ctrl</kbd> + <kbd>Alt</kbd> + <kbd>H</kbd></td></tr>
+      <tr><td>Перезагрузить чат</td><td><kbd>Ctrl</kbd> + <kbd>Alt</kbd> + <kbd>R</kbd></td></tr>
+      <tr><td>Сбросить размер и позицию</td><td><kbd>Ctrl</kbd> + <kbd>Alt</kbd> + <kbd>0</kbd></td></tr>
+      <tr><td>Демо-чат (симуляция)</td><td><kbd>Ctrl</kbd> + <kbd>Alt</kbd> + <kbd>D</kbd></td></tr>
+      <tr><td>Настройки</td><td><kbd>Ctrl</kbd> + <kbd>Alt</kbd> + <kbd>S</kbd></td></tr>
+    </table>
+    <div class="hint">Игра должна быть в режиме Borderless / Windowed — поверх эксклюзивного полного экрана оверлей не отображается.</div>
+  </div>
+
+  <div class="actions">
+    <button class="primary" id="save">Сохранить</button>
+    <button id="reset">Сбросить позицию</button>
+    <button id="lock">Заблокировать / разблокировать</button>
+    <button id="demo">Демо-чат</button>
+    <button id="folder">Папка с конфигом</button>
+    <button class="danger" id="quit">Выход</button>
+  </div>
+
+  <div class="status" id="status"></div>
+
+<script>
+  const el = (id) => document.getElementById(id);
+  let presets = {};
+
+  function setStatus(text, isError) {
+    const s = el('status');
+    s.textContent = text;
+    s.className = 'status' + (isError ? ' err' : '');
+    if (text) setTimeout(() => { if (s.textContent === text) s.textContent = ''; }, 4000);
+  }
+
+  async function init() {
+    const state = await window.svo.getState();
+    presets = state.presets || {};
+    el('url').value = state.cfg.url || '';
+    el('protect').checked = !!state.cfg.hideFromCapture;
+    el('opacity').value = Math.round((state.cfg.opacity ?? 1) * 100);
+    el('opacityValue').textContent = el('opacity').value + '%';
+    if (state.cfg.scale) {
+      el('scale').value = state.cfg.scale;
+      el('scaleValue').textContent = state.cfg.scale + '%';
+    }
+
+    const hide = state.cfg.hide || {};
+    el('showTime').checked = !hide.time;
+    el('showIcons').checked = !hide.icons;
+    el('showNames').checked = !hide.names;
+
+    let u = null;
+    try { u = new URL(state.cfg.url); } catch (_) { u = null; }
+    const param = (key, fallback) => (u ? (u.searchParams.get(key) || fallback) : fallback);
+    el('theme').value = param('messageTheme', 'compact');
+    el('align').value = param('messageAlignment', 'top');
+    el('animation').value = param('messageAnimation', 'none');
+    el('margin').value = param('messageMargin', '10');
+    el('marginValue').textContent = el('margin').value;
+    const snd = state.cfg.sound || {};
+    el('showSound').checked = !!snd.enabled;
+    el('soundFile').value = snd.file || '';
+
+    const tc = parseColor(param('color'), '#f0e8da', 100);
+    const nc = parseColor(param('nameColor'), '#d9a85f', 100);
+    const bc = parseColor(param('messageBoxColor'), '#000000', 0);
+    const cc = parseColor(param('background'), '#141414', 0);
+    el('textColor').value = tc.hex;
+    el('nameColor').value = nc.hex;
+    el('boxColor').value = bc.hex;
+    el('boxAlpha').value = bc.alpha;
+    el('boxAlphaValue').textContent = bc.alpha + '%';
+    el('chatColor').value = cc.hex;
+    el('chatAlpha').value = cc.alpha;
+    el('chatAlphaValue').textContent = cc.alpha + '%';
+  }
+
+  function parseColor(value, fallbackHex, fallbackAlpha) {
+    const m = String(value || '').match(/^#([0-9a-f]{6})([0-9a-f]{2})?$/i);
+    if (!m) return { hex: fallbackHex, alpha: fallbackAlpha };
+    return { hex: '#' + m[1].toLowerCase(), alpha: m[2] ? Math.round(parseInt(m[2], 16) / 255 * 100) : 100 };
+  }
+
+  function alphaHex(pct) {
+    const v = Math.round(Math.max(0, Math.min(100, Number(pct) || 0)) / 100 * 255);
+    return v.toString(16).padStart(2, '0');
+  }
+
+  function pushHide() {
+    window.svo.setView({
+      hide: {
+        time: !el('showTime').checked,
+        icons: !el('showIcons').checked,
+        names: !el('showNames').checked
+      }
+    });
+  }
+
+  ['showTime', 'showIcons', 'showNames'].forEach((id) => {
+    el(id).addEventListener('change', pushHide);
+  });
+
+  el('theme').addEventListener('change', () => {
+    window.svo.setView({ param: { messageTheme: el('theme').value } });
+  });
+  el('align').addEventListener('change', () => {
+    window.svo.setView({ param: { messageAlignment: el('align').value } });
+  });
+  el('animation').addEventListener('change', () => {
+    window.svo.setView({ param: { messageAnimation: el('animation').value } });
+  });
+  el('showSound').addEventListener('change', () => {
+    window.svo.setSound({ enabled: el('showSound').checked, file: el('soundFile').value });
+  });
+  el('pickSound').addEventListener('click', async () => {
+    const file = await window.svo.pickSound();
+    if (file) {
+      el('soundFile').value = file;
+      window.svo.setSound({ enabled: el('showSound').checked, file });
+    }
+  });
+  el('testSound').addEventListener('click', () => {
+    window.svo.testSound(el('soundFile').value);
+  });
+
+  let marginTimer = null;
+  el('margin').addEventListener('input', () => {
+    const value = el('margin').value;
+    el('marginValue').textContent = value;
+    clearTimeout(marginTimer);
+    marginTimer = setTimeout(() => window.svo.setView({ param: { messageMargin: value } }), 300);
+  });
+
+  let colorTimer = null;
+  function pushColors() {
+    clearTimeout(colorTimer);
+    colorTimer = setTimeout(() => {
+      window.svo.setView({
+        param: {
+          color: el('textColor').value,
+          nameColor: el('nameColor').value,
+          messageBoxColor: el('boxColor').value + alphaHex(el('boxAlpha').value),
+          background: el('chatColor').value + alphaHex(el('chatAlpha').value)
+        }
+      });
+    }, 300);
+  }
+
+  ['textColor', 'nameColor', 'boxColor', 'chatColor'].forEach((id) => {
+    el(id).addEventListener('input', pushColors);
+  });
+  el('boxAlpha').addEventListener('input', () => {
+    el('boxAlphaValue').textContent = el('boxAlpha').value + '%';
+    pushColors();
+  });
+  el('chatAlpha').addEventListener('input', () => {
+    el('chatAlphaValue').textContent = el('chatAlpha').value + '%';
+    pushColors();
+  });
+
+  let scaleTimer = null;
+  el('scale').addEventListener('input', () => {
+    const v = Number(el('scale').value);
+    el('scaleValue').textContent = v + '%';
+    clearTimeout(scaleTimer);
+    scaleTimer = setTimeout(() => window.svo.setScale(v), 250);
+  });
+
+  if (window.svo.onScaleChanged) {
+    window.svo.onScaleChanged((v) => {
+      el('scale').value = v;
+      el('scaleValue').textContent = v + '%';
+    });
+  }
+
+  el('opacity').addEventListener('input', () => {
+    el('opacityValue').textContent = el('opacity').value + '%';
+  });
+
+  function withToken(url) {
+    try {
+      const token = new URL(el('url').value).searchParams.get('token');
+      if (!token || token === 'YOUR_TOKEN') return url;
+      const u = new URL(url);
+      const own = u.searchParams.get('token');
+      if (!own || own === 'YOUR_TOKEN') u.searchParams.set('token', token);
+      return u.toString();
+    } catch (_) {
+      return url;
+    }
+  }
+
+  document.querySelectorAll('[data-preset]').forEach((btn) => {
+    btn.addEventListener('click', () => {
+      const key = btn.getAttribute('data-preset');
+      if (presets[key]) el('url').value = withToken(presets[key]);
+    });
+  });
+
+  el('save').addEventListener('click', async () => {
+    const res = await window.svo.save({
+      url: el('url').value,
+      hideFromCapture: el('protect').checked,
+      opacity: Number(el('opacity').value) / 100
+    });
+    if (res && res.ok) setStatus('Сохранено.');
+    else setStatus((res && res.error) || 'Не удалось сохранить.', true);
+  });
+
+  el('reset').addEventListener('click', async () => {
+    await window.svo.resetBounds();
+    setStatus('Позиция сброшена.');
+  });
+
+  el('lock').addEventListener('click', async () => {
+    const locked = await window.svo.toggleLock();
+    setStatus(locked ? 'Оверлей заблокирован: клики проходят в игру.' : 'Оверлей разблокирован: можно тянуть и нажимать.');
+  });
+
+  el('demo').addEventListener('click', async () => {
+    const on = await window.svo.toggleDemo();
+    setStatus(on ? 'Демо-чат включён: идёт симуляция сообщений.' : 'Демо-чат выключен: загружен реальный чат.');
+  });
+
+  el('folder').addEventListener('click', () => window.svo.openDir());
+
+  el('quit').addEventListener('click', () => {
+    if (confirm('Закрыть оверлей?')) window.svo.quit();
+  });
+
+  init();
+</script>
+</body>
+</html>

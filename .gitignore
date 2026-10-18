@@ -1,0 +1,6 @@
+node_modules/
+dist/
+config.json
+*.log
+tools/*.ps1
+tools/probe.js

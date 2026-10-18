@@ -1,0 +1,15 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head><meta charset="utf-8"><title>sound</title></head>
+<body>
+<script>
+  window.playSound = (src) => {
+    try {
+      const audio = new Audio(src);
+      audio.volume = 0.8;
+      audio.play().catch(() => {});
+    } catch (_) { /* ignore */ }
+  };
+</script>
+</body>
+</html>
