@@ -532,6 +532,13 @@ function ensureCounterEditUi(locked) {
       settings.textContent = 'Настройки';
       settings.addEventListener('click', (e) => { e.stopPropagation(); window.svo.openSettings(); });
       bar.appendChild(settings);
+
+      const hideBtn = document.createElement('button');
+      hideBtn.textContent = 'Скрыть';
+      hideBtn.title = 'Выключить счётчик';
+      hideBtn.addEventListener('click', (e) => { e.stopPropagation(); window.svo.toggleCounter(); });
+      bar.appendChild(hideBtn);
+
       bar.addEventListener('pointerdown', (e) => {
         if (e.target && e.target.closest && e.target.closest('button')) return;
         e.preventDefault();
@@ -630,6 +637,12 @@ function ensureEditUi(locked) {
       demo.textContent = 'Демо';
       demo.addEventListener('click', (e) => { e.stopPropagation(); window.svo.toggleDemo(); });
       bar.appendChild(demo);
+
+      const counterBtn = document.createElement('button');
+      counterBtn.textContent = 'Счётчик';
+      counterBtn.title = 'Показать или скрыть счётчик зрителей';
+      counterBtn.addEventListener('click', (e) => { e.stopPropagation(); window.svo.toggleCounter(); });
+      bar.appendChild(counterBtn);
 
       const smaller = document.createElement('button');
       smaller.textContent = 'A-';
@@ -1025,6 +1038,26 @@ if (!gotLock) {
       }
       return true;
     });
+
+    ipcMain.handle('counter:set-bounds', (_event, b) => {
+      if (!b || typeof b !== 'object') return null;
+      cfg.counter.width = Math.max(100, Math.round(Number(b.width) || cfg.counter.width || 360));
+      cfg.counter.height = Math.max(60, Math.round(Number(b.height) || cfg.counter.height || 120));
+      cfg.counter.x = b.x === null || b.x === undefined || b.x === '' ? null : Math.round(Number(b.x));
+      cfg.counter.y = b.y === null || b.y === undefined || b.y === '' ? null : Math.round(Number(b.y));
+      saveConfig();
+      if (counterWin && !counterWin.isDestroyed()) {
+        counterWin.setBounds({
+          x: cfg.counter.x,
+          y: cfg.counter.y,
+          width: cfg.counter.width,
+          height: cfg.counter.height
+        });
+      }
+      return cfg.counter;
+    });
+
+    ipcMain.handle('counter:toggle', () => toggleCounter());
 
     ipcMain.handle('app:quit', () => { quitting = true; app.quit(); return true; });
     ipcMain.handle('app:open-dir', () => { shell.openPath(APP_DIR); return true; });

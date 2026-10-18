@@ -15,6 +15,8 @@ contextBridge.exposeInMainWorld('svo', {
   toggleDemo: () => ipcRenderer.invoke('overlay:toggle-demo'),
   setCounter: (patch) => ipcRenderer.invoke('counter:set', patch),
   resetCounter: () => ipcRenderer.invoke('counter:reset-bounds'),
+  setCounterBounds: (b) => ipcRenderer.invoke('counter:set-bounds', b),
+  toggleCounter: () => ipcRenderer.invoke('counter:toggle'),
   notifyMessage: () => ipcRenderer.send('overlay:message'),
   pickSound: () => ipcRenderer.invoke('sound:pick'),
   setSound: (patch) => ipcRenderer.invoke('sound:set', patch),

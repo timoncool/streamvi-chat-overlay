@@ -67,7 +67,7 @@
   .check input { margin-top: 3px; accent-color: var(--accent); }
   .hint { color: var(--muted); font-size: 12px; margin-top: 8px; }
   input[type="range"] { width: 100%; accent-color: var(--accent); }
-  input[type="text"] {
+  input[type="text"], input[type="number"] {
     background: #0e0e15; color: var(--text);
     border: 1px solid var(--line); border-radius: 8px;
     padding: 7px 10px; font: 12px Consolas, "Courier New", monospace;
@@ -219,6 +219,14 @@
     <label class="title">Счётчик зрителей</label>
     <div class="check" style="margin-bottom:8px"><input type="checkbox" id="counterEnabled"><div><label for="counterEnabled">Показывать счётчик</label></div></div>
     <textarea id="counterUrl" spellcheck="false" style="height:64px"></textarea>
+    <div class="line">
+      <label>Позиция и размер</label>
+      <input type="number" id="counterX" placeholder="X" style="width:76px">
+      <input type="number" id="counterY" placeholder="Y" style="width:76px">
+      <input type="number" id="counterW" placeholder="Ширина" style="width:86px">
+      <input type="number" id="counterH" placeholder="Высота" style="width:86px">
+      <button id="counterApply">Применить</button>
+    </div>
     <div class="presets">
       <button id="counterReset">Сбросить позицию счётчика</button>
     </div>
@@ -293,6 +301,10 @@
     const cnt = state.cfg.counter || {};
     el('counterEnabled').checked = !!cnt.enabled;
     el('counterUrl').value = cnt.url || '';
+    el('counterX').value = Number.isInteger(cnt.x) ? cnt.x : '';
+    el('counterY').value = Number.isInteger(cnt.y) ? cnt.y : '';
+    el('counterW').value = cnt.width || 360;
+    el('counterH').value = cnt.height || 120;
 
     const tc = parseColor(param('color'), '#f0e8da', 100);
     const nc = parseColor(param('nameColor'), '#d9a85f', 100);
@@ -365,6 +377,15 @@
   el('counterReset').addEventListener('click', async () => {
     await window.svo.resetCounter();
     setStatus('Позиция счётчика сброшена.');
+  });
+  el('counterApply').addEventListener('click', async () => {
+    await window.svo.setCounterBounds({
+      x: el('counterX').value === '' ? null : Number(el('counterX').value),
+      y: el('counterY').value === '' ? null : Number(el('counterY').value),
+      width: Number(el('counterW').value) || 360,
+      height: Number(el('counterH').value) || 120
+    });
+    setStatus('Позиция и размер счётчика применены.');
   });
 
   let marginTimer = null;

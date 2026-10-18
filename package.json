@@ -1,7 +1,7 @@
 {
   "name": "streamvi-chat-overlay",
   "productName": "StreamVi Chat Overlay",
-  "version": "1.0.2",
+  "version": "1.0.3",
   "description": "Transparent click-through chat overlay for StreamVi widgets on Windows. Unofficial, not affiliated with StreamVi.",
   "main": "src/main.js",
   "author": "Ilya Timonin",
