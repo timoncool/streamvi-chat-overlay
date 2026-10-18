@@ -8,9 +8,10 @@ const path = require('path');
 const fs = require('fs');
 const { pathToFileURL } = require('url');
 
-const APP_DIR = app.isPackaged ? path.dirname(process.execPath) : path.join(__dirname, '..');
+const RES_DIR = path.join(__dirname, '..');
+const APP_DIR = app.isPackaged ? app.getPath('userData') : RES_DIR;
 const CONFIG_PATH = path.join(APP_DIR, 'config.json');
-const ICON_PATH = path.join(APP_DIR, 'assets', 'icon.png');
+const ICON_PATH = path.join(RES_DIR, 'assets', 'icon.png');
 const SIM_URL = pathToFileURL(path.join(__dirname, 'sim.html')).href;
 
 const STREAMVI_TOKEN = 'YOUR_TOKEN';
@@ -35,6 +36,14 @@ const DEFAULTS = {
   scale: 149,
   hide: { time: false, icons: false, names: false },
   sound: { enabled: false, file: '' },
+  counter: {
+    enabled: false,
+    url: 'https://plugin-counter.streamvi.io/obs?template_id=69fe0a69a2ce44a8328506c2&token=YOUR_COUNTER_TOKEN',
+    x: null,
+    y: null,
+    width: 360,
+    height: 120
+  },
   locked: false,
   hideFromCapture: true,
   hotkeys: {
@@ -44,6 +53,7 @@ const DEFAULTS = {
     settings: 'CommandOrControl+Alt+S',
     resetBounds: 'CommandOrControl+Alt+0',
     demo: 'CommandOrControl+Alt+D',
+    counter: 'CommandOrControl+Alt+V',
     zoomIn: 'CommandOrControl+Alt+=',
     zoomOut: 'CommandOrControl+Alt+-'
   }
@@ -86,6 +96,11 @@ html.__svo_unlocked #chat { padding-top: 28px; }
 }
 `;
 
+const COUNTER_CSS = `
+html, body { overflow: hidden !important; background: transparent !important; margin: 0 !important; }
+::-webkit-scrollbar { width: 0 !important; height: 0 !important; display: none !important; }
+`;
+
 let cfg = loadConfig();
 let win = null;
 let settingsWin = null;
@@ -97,6 +112,8 @@ let demoMode = false;
 let scaleTimer = null;
 let soundWin = null;
 let lastSoundAt = 0;
+let counterWin = null;
+let counterTimer = null;
 
 function ensureSoundWindow() {
   if (soundWin && !soundWin.isDestroyed()) return soundWin;
@@ -137,6 +154,7 @@ function loadConfig() {
       ...raw,
       hide: { ...DEFAULTS.hide, ...(raw.hide || {}) },
       sound: { ...DEFAULTS.sound, ...(raw.sound || {}) },
+      counter: { ...DEFAULTS.counter, ...(raw.counter || {}) },
       hotkeys: { ...DEFAULTS.hotkeys, ...(raw.hotkeys || {}) }
     };
     try {
@@ -168,13 +186,15 @@ function saveBoundsSoon() {
   }, 400);
 }
 
-function startDrag(mode) {
-  if (!win || win.isDestroyed()) return false;
+function startDrag(mode, target = 'chat') {
+  const targetWin = target === 'counter' ? counterWin : win;
+  if (!targetWin || targetWin.isDestroyed()) return false;
   stopDrag(false);
-  const bounds = win.getBounds();
+  const bounds = targetWin.getBounds();
   const point = screen.getCursorScreenPoint();
-  dbg('start', { mode, bounds, point });
+  dbg('start', { mode, target, bounds, point });
   dragState = {
+    target,
     mode: mode === 'resize' ? 'resize' : 'move',
     startX: point.x,
     startY: point.y,
@@ -186,21 +206,23 @@ function startDrag(mode) {
 }
 
 function tickDrag() {
-  if (!dragState || !win || win.isDestroyed()) return;
+  if (!dragState) return;
+  const targetWin = dragState.target === 'counter' ? counterWin : win;
+  if (!targetWin || targetWin.isDestroyed()) return;
   if (Date.now() - dragState.startedAt > 120000) { stopDrag(); return; }
   const point = screen.getCursorScreenPoint();
   const dx = point.x - dragState.startX;
   const dy = point.y - dragState.startY;
   dragState.tickCount = (dragState.tickCount || 0) + 1;
   if (dragState.tickCount % 8 === 0) {
-    dbg('tick', { point, dx, dy, mode: dragState.mode });
+    dbg('tick', { point, dx, dy, mode: dragState.mode, target: dragState.target });
   }
   if (dragState.mode === 'move') {
-    win.setPosition(dragState.bounds.x + dx, dragState.bounds.y + dy);
+    targetWin.setPosition(dragState.bounds.x + dx, dragState.bounds.y + dy);
   } else {
-    win.setSize(
-      Math.max(240, dragState.bounds.width + dx),
-      Math.max(180, dragState.bounds.height + dy)
+    targetWin.setSize(
+      Math.max(120, dragState.bounds.width + dx),
+      Math.max(60, dragState.bounds.height + dy)
     );
   }
 }
@@ -208,9 +230,13 @@ function tickDrag() {
 function stopDrag(save = true) {
   if (!dragState) return false;
   clearInterval(dragState.timer);
-  dbg('stop', { state: { mode: dragState.mode, startX: dragState.startX, startY: dragState.startY, bounds: dragState.bounds }, end: win && !win.isDestroyed() ? win.getBounds() : null });
+  dbg('stop', { state: { target: dragState.target, mode: dragState.mode, startX: dragState.startX, startY: dragState.startY, bounds: dragState.bounds } });
+  const target = dragState.target;
   dragState = null;
-  if (save) saveBoundsSoon();
+  if (save) {
+    if (target === 'counter') saveCounterSoon();
+    else saveBoundsSoon();
+  }
   return true;
 }
 
@@ -380,6 +406,175 @@ function createOverlay() {
   }
 }
 
+function counterBounds() {
+  const c = cfg.counter;
+  const width = c.width || 360;
+  const height = c.height || 120;
+  if (Number.isInteger(c.x) && Number.isInteger(c.y)) {
+    return { x: c.x, y: c.y, width, height };
+  }
+  const wa = screen.getPrimaryDisplay().workArea;
+  let x = wa.x + wa.width - width - 24;
+  let y = wa.y + 24;
+  if (win && !win.isDestroyed()) {
+    const b = win.getBounds();
+    x = b.x + b.width - width;
+    y = b.y - height - 12;
+    if (y < wa.y) y = b.y + b.height + 12;
+  }
+  return { x, y, width, height };
+}
+
+function saveCounterSoon() {
+  if (!counterWin || counterWin.isDestroyed()) return;
+  clearTimeout(counterTimer);
+  counterTimer = setTimeout(() => {
+    if (!counterWin || counterWin.isDestroyed()) return;
+    const b = counterWin.getBounds();
+    cfg.counter.x = b.x; cfg.counter.y = b.y;
+    cfg.counter.width = b.width; cfg.counter.height = b.height;
+    saveConfig();
+  }, 400);
+}
+
+function createCounter() {
+  if (!cfg.counter.enabled) return;
+  if (counterWin && !counterWin.isDestroyed()) return;
+  const b = counterBounds();
+  counterWin = new BrowserWindow({
+    x: b.x, y: b.y, width: b.width, height: b.height,
+    frame: false,
+    transparent: true,
+    backgroundColor: '#00000000',
+    hasShadow: false,
+    resizable: true,
+    thickFrame: true,
+    minimizable: false,
+    maximizable: false,
+    fullscreenable: false,
+    skipTaskbar: true,
+    alwaysOnTop: true,
+    focusable: false,
+    show: false,
+    title: 'StreamVi Viewer Counter',
+    icon: ICON_PATH,
+    webPreferences: {
+      preload: path.join(__dirname, 'preload.js'),
+      contextIsolation: true,
+      nodeIntegration: false,
+      backgroundThrottling: false
+    }
+  });
+  counterWin.setMenuBarVisibility(false);
+  counterWin.setAlwaysOnTop(true, 'screen-saver');
+  counterWin.setContentProtection(!!cfg.hideFromCapture);
+  counterWin.loadURL(cfg.counter.url).catch(() => {});
+  counterWin.once('ready-to-show', () => {
+    counterWin.showInactive();
+    applyCounterLock();
+  });
+  counterWin.webContents.on('dom-ready', () => {
+    counterWin.webContents.insertCSS(COUNTER_CSS).catch(() => {});
+    applyCounterLock();
+  });
+  counterWin.webContents.on('did-fail-load', (_e, code, desc) => {
+    console.error('[counter] load failed', code, desc);
+  });
+  counterWin.on('move', saveCounterSoon);
+  counterWin.on('resize', saveCounterSoon);
+  counterWin.on('close', (event) => {
+    if (!quitting) {
+      event.preventDefault();
+      counterWin.hide();
+    }
+  });
+  counterWin.on('closed', () => { counterWin = null; });
+}
+
+function ensureCounterEditUi(locked) {
+  if (!counterWin || counterWin.isDestroyed()) return;
+  const script = `(() => {
+    const BAR = '__svo_bar';
+    const GRIP = '__svo_grip';
+    const STYLE = '__svo_style';
+    if (!document.getElementById(STYLE)) {
+      const st = document.createElement('style');
+      st.id = STYLE;
+      st.textContent = ${JSON.stringify(UI_CSS)};
+      document.documentElement.appendChild(st);
+    }
+    const oldBar = document.getElementById(BAR);
+    const oldGrip = document.getElementById(GRIP);
+    if (${locked}) {
+      if (oldBar) oldBar.remove();
+      if (oldGrip) oldGrip.remove();
+      document.documentElement.style.outline = '';
+      return;
+    }
+    if (!oldBar) {
+      const bar = document.createElement('div');
+      bar.id = BAR;
+      const text = document.createElement('span');
+      text.className = 'svo-text';
+      text.textContent = 'Счётчик · тяни за полосу · Ctrl+Alt+L — закрепить';
+      bar.appendChild(text);
+      const settings = document.createElement('button');
+      settings.textContent = 'Настройки';
+      settings.addEventListener('click', (e) => { e.stopPropagation(); window.svo.openSettings(); });
+      bar.appendChild(settings);
+      bar.addEventListener('pointerdown', (e) => {
+        if (e.target && e.target.closest && e.target.closest('button')) return;
+        e.preventDefault();
+        try { bar.setPointerCapture(e.pointerId); } catch (_) {}
+        window.svo.dragStart('move', 'counter');
+        const onUp = () => { window.svo.dragEnd(); bar.removeEventListener('pointerup', onUp, true); bar.removeEventListener('pointercancel', onUp, true); };
+        bar.addEventListener('pointerup', onUp, true);
+        bar.addEventListener('pointercancel', onUp, true);
+      });
+      document.documentElement.appendChild(bar);
+    }
+    if (!oldGrip) {
+      const grip = document.createElement('div');
+      grip.id = GRIP;
+      grip.addEventListener('pointerdown', (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        try { grip.setPointerCapture(e.pointerId); } catch (_) {}
+        window.svo.dragStart('resize', 'counter');
+        const onUp = () => { window.svo.dragEnd(); grip.removeEventListener('pointerup', onUp, true); grip.removeEventListener('pointercancel', onUp, true); };
+        grip.addEventListener('pointerup', onUp, true);
+        grip.addEventListener('pointercancel', onUp, true);
+      });
+      document.documentElement.appendChild(grip);
+    }
+    document.documentElement.style.outline = '2px solid rgba(155, 92, 246, 0.95)';
+    document.documentElement.style.outlineOffset = '-2px';
+  })()`;
+  counterWin.webContents.executeJavaScript(script, true).catch(() => {});
+}
+
+function applyCounterLock() {
+  if (!counterWin || counterWin.isDestroyed()) return;
+  counterWin.setIgnoreMouseEvents(cfg.locked, { forward: true });
+  ensureCounterEditUi(cfg.locked);
+}
+
+function toggleCounter(force) {
+  cfg.counter.enabled = typeof force === 'boolean' ? force : !cfg.counter.enabled;
+  saveConfig();
+  if (cfg.counter.enabled) {
+    createCounter();
+    if (counterWin && !counterWin.isDestroyed()) {
+      counterWin.showInactive();
+      applyCounterLock();
+    }
+  } else if (counterWin && !counterWin.isDestroyed()) {
+    counterWin.hide();
+  }
+  updateTrayMenu();
+  return cfg.counter.enabled;
+}
+
 function ensureEditUi(locked) {
   if (!win || win.isDestroyed()) return;
   const script = `(() => {
@@ -484,6 +679,7 @@ function applyLock() {
   win.setFocusable(!cfg.locked);
   if (cfg.locked) win.blur();
   ensureEditUi(cfg.locked);
+  applyCounterLock();
   updateTrayMenu();
 }
 
@@ -495,7 +691,13 @@ function toggleLock() {
 
 function toggleVisible() {
   if (!win || win.isDestroyed()) return;
-  if (win.isVisible()) win.hide(); else win.showInactive();
+  if (win.isVisible()) {
+    win.hide();
+    if (counterWin && !counterWin.isDestroyed()) counterWin.hide();
+  } else {
+    win.showInactive();
+    if (counterWin && !counterWin.isDestroyed() && cfg.counter.enabled) counterWin.showInactive();
+  }
   updateTrayMenu();
 }
 
@@ -606,6 +808,7 @@ function registerHotkeys() {
   reg(hk.settings, openSettings, 'settings');
   reg(hk.resetBounds, resetBounds, 'resetBounds');
   reg(hk.demo, () => toggleDemo(), 'demo');
+  reg(hk.counter, () => toggleCounter(), 'counter');
   reg(hk.zoomIn, () => setScale(cfg.scale + 10), 'zoomIn');
   reg(hk.zoomOut, () => setScale(cfg.scale - 10), 'zoomOut');
   try { globalShortcut.register('CommandOrControl+Alt+Plus', () => setScale(cfg.scale + 10)); } catch (_) { /* ignore */ }
@@ -621,6 +824,7 @@ function updateTrayMenu() {
     { label: 'Перезагрузить чат (Ctrl+Alt+R)', click: reloadChat },
     { label: 'Сбросить размер и позицию (Ctrl+Alt+0)', click: resetBounds },
     { label: 'Демо-чат: симуляция (Ctrl+Alt+D)', type: 'checkbox', checked: demoMode, click: () => toggleDemo() },
+    { label: 'Счётчик зрителей (Ctrl+Alt+V)', type: 'checkbox', checked: !!cfg.counter.enabled, click: () => toggleCounter() },
     { type: 'separator' },
     { label: 'Настройки… (Ctrl+Alt+S)', click: openSettings },
     { label: 'Открыть папку с конфигом', click: () => shell.openPath(APP_DIR) },
@@ -657,6 +861,7 @@ if (!gotLock) {
 
   app.whenReady().then(() => {
     createOverlay();
+    if (cfg.counter.enabled) createCounter();
     createTray();
     registerHotkeys();
     if (firstRun) setTimeout(openSettings, 600);
@@ -707,7 +912,7 @@ if (!gotLock) {
       return true;
     });
     ipcMain.handle('app:open-settings', () => { openSettings(); return true; });
-    ipcMain.handle('overlay:drag-start', (_event, mode) => startDrag(mode));
+    ipcMain.handle('overlay:drag-start', (_event, mode, target) => startDrag(mode, target === 'counter' ? 'counter' : 'chat'));
     ipcMain.handle('overlay:drag-end', () => stopDrag());
     ipcMain.handle('overlay:toggle-demo', () => toggleDemo());
     ipcMain.handle('overlay:set-scale', (_event, pct) => setScale(pct));
@@ -770,6 +975,36 @@ if (!gotLock) {
       if (now - lastSoundAt < 250) return;
       lastSoundAt = now;
       playSound();
+    });
+
+    ipcMain.handle('counter:set', (_event, patch) => {
+      if (!patch || typeof patch !== 'object') return null;
+      if (typeof patch.enabled === 'boolean') cfg.counter.enabled = patch.enabled;
+      if (typeof patch.url === 'string') {
+        const url = patch.url.trim();
+        if (/^https?:\/\//i.test(url)) {
+          const changed = url !== cfg.counter.url;
+          cfg.counter.url = url;
+          if (changed && counterWin && !counterWin.isDestroyed()) {
+            counterWin.loadURL(url).catch(() => {});
+          }
+        }
+      }
+      saveConfig();
+      toggleCounter(cfg.counter.enabled);
+      return cfg.counter;
+    });
+
+    ipcMain.handle('counter:reset-bounds', () => {
+      cfg.counter.x = null;
+      cfg.counter.y = null;
+      cfg.counter.width = 360;
+      cfg.counter.height = 120;
+      saveConfig();
+      if (counterWin && !counterWin.isDestroyed()) {
+        counterWin.setBounds(counterBounds());
+      }
+      return true;
     });
 
     ipcMain.handle('app:quit', () => { quitting = true; app.quit(); return true; });

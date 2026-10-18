@@ -34,6 +34,7 @@ This app puts **the same widget that goes on air** into a frameless, transparent
 - **Colors** — text, nickname, per-message plate (with alpha) and chat background (with alpha).
 - **Scale** — 80–250 %, from the hotkeys, the edit bar or the settings window.
 - **Custom notification sound** — pick any local audio file, or use the widget's built-in sound.
+- **Viewer counter** — a second overlay with the StreamVi viewer-count widget, with its own URL, position and size.
 - **Excluded from OBS** — `WDA_EXCLUDEFROMCAPTURE` keeps the overlay out of display capture by default.
 - **Demo mode** — a built-in chat simulator with real platform icons and long messages, so you can tune the look without going live.
 - **Portable config** — everything lives in `config.json` next to the app; no telemetry, no cloud.
@@ -48,11 +49,14 @@ This app puts **the same widget that goes on air** into a frameless, transparent
 | Reset position and size | `Ctrl+Alt+0` |
 | Zoom in / out | `Ctrl+Alt+=` / `Ctrl+Alt+-` |
 | Demo chat (simulation) | `Ctrl+Alt+D` |
+| Viewer counter | `Ctrl+Alt+V` |
 | Settings | `Ctrl+Alt+S` |
 
 ## Install
 
-Requires Windows 10/11 and [Node.js](https://nodejs.org/) 20+.
+**Download the installer** from [Releases](https://github.com/timoncool/streamvi-chat-overlay/releases/latest) — `StreamVi Chat Overlay Setup x.y.z.exe`, or the portable single `.exe`. No Node.js needed.
+
+From source (Windows 10/11, [Node.js](https://nodejs.org/) 20+):
 
 ```bash
 git clone https://github.com/timoncool/streamvi-chat-overlay.git
@@ -84,7 +88,7 @@ The overlay is hidden from screen capture by default (`Настройки → Н
 ## Notes
 
 - The chat URL contains your personal StreamVi token. It is stored only in `config.json` on your machine and is never sent anywhere by this app.
-- `config.json` is created next to the executable (or next to `package.json` in dev) and is git-ignored.
+- `config.json` is created next to `package.json` in dev, and in `%APPDATA%\streamvi-chat-overlay\` for the installed build. It is git-ignored.
 - If the widget is offline, StreamVi shows its placeholder ("Чтобы чат заработал, запусти трансляцию…"). That is the widget's own state, not an overlay bug.
 - HDR may make transparent windows look washed out; disable HDR for the game if the overlay looks wrong.
 

@@ -1,5 +1,6 @@
 {
   "name": "streamvi-chat-overlay",
+  "productName": "StreamVi Chat Overlay",
   "version": "1.0.0",
   "description": "Transparent click-through chat overlay for StreamVi widgets on Windows. Unofficial, not affiliated with StreamVi.",
   "main": "src/main.js",
@@ -13,10 +14,37 @@
   "keywords": ["streamvi", "chat", "overlay", "streaming", "electron", "windows", "click-through"],
   "scripts": {
     "start": "electron .",
-    "pack": "electron-packager . StreamViOverlay --platform=win32 --arch=x64 --out=dist --overwrite --asar"
+    "pack": "electron-packager . StreamViOverlay --platform=win32 --arch=x64 --out=dist --overwrite --asar",
+    "dist": "electron-builder --win"
+  },
+  "build": {
+    "appId": "io.github.timoncool.streamvi.chatoverlay",
+    "productName": "StreamVi Chat Overlay",
+    "directories": { "output": "dist" },
+    "files": ["src/**/*", "assets/**/*", "package.json"],
+    "asar": true,
+    "win": {
+      "icon": "assets/icon.ico",
+      "target": [
+        { "target": "nsis", "arch": ["x64"] },
+        { "target": "portable", "arch": ["x64"] }
+      ]
+    },
+    "nsis": {
+      "oneClick": false,
+      "perMachine": false,
+      "allowToChangeInstallationDirectory": true,
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true,
+      "shortcutName": "StreamVi Chat Overlay"
+    },
+    "portable": {
+      "artifactName": "StreamViChatOverlay-portable-${version}.exe"
+    }
   },
   "devDependencies": {
     "@electron/packager": "^18.3.6",
-    "electron": "^44.9.0"
+    "electron": "^44.9.0",
+    "electron-builder": "^26.0.12"
   }
 }

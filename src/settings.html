@@ -216,6 +216,16 @@
   </div>
 
   <div class="card">
+    <label class="title">Счётчик зрителей</label>
+    <div class="check" style="margin-bottom:8px"><input type="checkbox" id="counterEnabled"><div><label for="counterEnabled">Показывать счётчик</label></div></div>
+    <textarea id="counterUrl" spellcheck="false" style="height:64px"></textarea>
+    <div class="presets">
+      <button id="counterReset">Сбросить позицию счётчика</button>
+    </div>
+    <div class="hint">Ссылка на виджет зрителей из StreamVi (plugin-counter.streamvi.io/obs). Цвета, размеры и раскладка настраиваются в дашборде StreamVi. В режиме редактирования счётчик двигается за свою полосу.</div>
+  </div>
+
+  <div class="card">
     <label class="title">Горячие клавиши (работают из игры)</label>
     <table class="keys">
       <tr><td>Заблокировать / разблокировать</td><td><kbd>Ctrl</kbd> + <kbd>Alt</kbd> + <kbd>L</kbd></td></tr>
@@ -223,6 +233,7 @@
       <tr><td>Перезагрузить чат</td><td><kbd>Ctrl</kbd> + <kbd>Alt</kbd> + <kbd>R</kbd></td></tr>
       <tr><td>Сбросить размер и позицию</td><td><kbd>Ctrl</kbd> + <kbd>Alt</kbd> + <kbd>0</kbd></td></tr>
       <tr><td>Демо-чат (симуляция)</td><td><kbd>Ctrl</kbd> + <kbd>Alt</kbd> + <kbd>D</kbd></td></tr>
+      <tr><td>Счётчик зрителей</td><td><kbd>Ctrl</kbd> + <kbd>Alt</kbd> + <kbd>V</kbd></td></tr>
       <tr><td>Настройки</td><td><kbd>Ctrl</kbd> + <kbd>Alt</kbd> + <kbd>S</kbd></td></tr>
     </table>
     <div class="hint">Игра должна быть в режиме Borderless / Windowed — поверх эксклюзивного полного экрана оверлей не отображается.</div>
@@ -278,6 +289,10 @@
     const snd = state.cfg.sound || {};
     el('showSound').checked = !!snd.enabled;
     el('soundFile').value = snd.file || '';
+
+    const cnt = state.cfg.counter || {};
+    el('counterEnabled').checked = !!cnt.enabled;
+    el('counterUrl').value = cnt.url || '';
 
     const tc = parseColor(param('color'), '#f0e8da', 100);
     const nc = parseColor(param('nameColor'), '#d9a85f', 100);
@@ -339,6 +354,17 @@
   });
   el('testSound').addEventListener('click', () => {
     window.svo.testSound(el('soundFile').value);
+  });
+
+  el('counterEnabled').addEventListener('change', () => {
+    window.svo.setCounter({ enabled: el('counterEnabled').checked, url: el('counterUrl').value });
+  });
+  el('counterUrl').addEventListener('change', () => {
+    window.svo.setCounter({ enabled: el('counterEnabled').checked, url: el('counterUrl').value });
+  });
+  el('counterReset').addEventListener('click', async () => {
+    await window.svo.resetCounter();
+    setStatus('Позиция счётчика сброшена.');
   });
 
   let marginTimer = null;
