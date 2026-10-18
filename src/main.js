@@ -372,6 +372,7 @@ function createOverlay() {
   win.webContents.on('dom-ready', () => {
     viewCssKey = null;
     win.webContents.insertCSS(backgroundCss(cfg.url)).catch(() => {});
+    win.webContents.insertCSS('::-webkit-scrollbar{width:0 !important;height:0 !important;display:none !important;}').catch(() => {});
     applyViewCss();
     installMessageObserver();
     applyContentOpacity();

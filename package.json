@@ -1,7 +1,7 @@
 {
   "name": "streamvi-chat-overlay",
   "productName": "StreamVi Chat Overlay",
-  "version": "1.0.1",
+  "version": "1.0.2",
   "description": "Transparent click-through chat overlay for StreamVi widgets on Windows. Unofficial, not affiliated with StreamVi.",
   "main": "src/main.js",
   "author": "Ilya Timonin",
@@ -11,7 +11,15 @@
     "type": "git",
     "url": "https://github.com/timoncool/streamvi-chat-overlay.git"
   },
-  "keywords": ["streamvi", "chat", "overlay", "streaming", "electron", "windows", "click-through"],
+  "keywords": [
+    "streamvi",
+    "chat",
+    "overlay",
+    "streaming",
+    "electron",
+    "windows",
+    "click-through"
+  ],
   "scripts": {
     "start": "electron .",
     "pack": "electron-packager . StreamViOverlay --platform=win32 --arch=x64 --out=dist --overwrite --asar",
@@ -20,14 +28,30 @@
   "build": {
     "appId": "io.github.timoncool.streamvi.chatoverlay",
     "productName": "StreamVi Chat Overlay",
-    "directories": { "output": "dist" },
-    "files": ["src/**/*", "assets/**/*", "package.json"],
+    "directories": {
+      "output": "dist"
+    },
+    "files": [
+      "src/**/*",
+      "assets/**/*",
+      "package.json"
+    ],
     "asar": true,
     "win": {
       "icon": "assets/icon.ico",
       "target": [
-        { "target": "nsis", "arch": ["x64"] },
-        { "target": "portable", "arch": ["x64"] }
+        {
+          "target": "nsis",
+          "arch": [
+            "x64"
+          ]
+        },
+        {
+          "target": "portable",
+          "arch": [
+            "x64"
+          ]
+        }
       ]
     },
     "nsis": {
