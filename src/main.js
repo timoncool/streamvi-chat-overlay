@@ -284,6 +284,13 @@ function applyViewCss() {
   win.webContents.insertCSS(css).then((key) => { viewCssKey = key; }).catch(() => {});
 }
 
+function applyContentOpacity() {
+  const value = String(Math.min(1, Math.max(0.2, Number(cfg.opacity) || 1)));
+  const script = `document.body.style.opacity = '${value}';`;
+  if (win && !win.isDestroyed()) win.webContents.executeJavaScript(script).catch(() => {});
+  if (counterWin && !counterWin.isDestroyed()) counterWin.webContents.executeJavaScript(script).catch(() => {});
+}
+
 function installMessageObserver() {
   if (!win || win.isDestroyed()) return;
   const script = `(() => {
@@ -367,6 +374,7 @@ function createOverlay() {
     win.webContents.insertCSS(backgroundCss(cfg.url)).catch(() => {});
     applyViewCss();
     installMessageObserver();
+    applyContentOpacity();
     if (demoMode) { applySimScale(); applySimColors(); }
     applyLock();
   });
@@ -475,6 +483,7 @@ function createCounter() {
   });
   counterWin.webContents.on('dom-ready', () => {
     counterWin.webContents.insertCSS(COUNTER_CSS).catch(() => {});
+    applyContentOpacity();
     applyCounterLock();
   });
   counterWin.webContents.on('did-fail-load', (_e, code, desc) => {
@@ -887,6 +896,7 @@ if (!gotLock) {
       if (win && !win.isDestroyed()) {
         win.setContentProtection(cfg.hideFromCapture);
         win.setOpacity(cfg.opacity);
+        applyContentOpacity();
         if (urlChanged) {
           demoMode = false;
           win.loadURL(cfg.url).catch(() => {});
@@ -916,6 +926,14 @@ if (!gotLock) {
     ipcMain.handle('overlay:drag-end', () => stopDrag());
     ipcMain.handle('overlay:toggle-demo', () => toggleDemo());
     ipcMain.handle('overlay:set-scale', (_event, pct) => setScale(pct));
+    ipcMain.handle('overlay:set-opacity', (_event, value) => {
+      const op = Number(value);
+      cfg.opacity = Number.isFinite(op) ? Math.min(1, Math.max(0.2, op)) : 1;
+      saveConfig();
+      if (win && !win.isDestroyed()) win.setOpacity(cfg.opacity);
+      applyContentOpacity();
+      return cfg.opacity;
+    });
     ipcMain.handle('overlay:step-scale', (_event, delta) => setScale(cfg.scale + (Number(delta) || 0)));
     ipcMain.handle('view:set', (_event, patch) => {
       if (!patch || typeof patch !== 'object') return null;

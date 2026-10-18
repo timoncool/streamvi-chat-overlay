@@ -417,8 +417,11 @@
     });
   }
 
+  let opacityTimer = null;
   el('opacity').addEventListener('input', () => {
     el('opacityValue').textContent = el('opacity').value + '%';
+    clearTimeout(opacityTimer);
+    opacityTimer = setTimeout(() => window.svo.setOpacity(Number(el('opacity').value) / 100), 150);
   });
 
   function withToken(url) {

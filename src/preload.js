@@ -20,6 +20,7 @@ contextBridge.exposeInMainWorld('svo', {
   setSound: (patch) => ipcRenderer.invoke('sound:set', patch),
   testSound: (file) => ipcRenderer.invoke('sound:test', file),
   setScale: (pct) => ipcRenderer.invoke('overlay:set-scale', pct),
+  setOpacity: (value) => ipcRenderer.invoke('overlay:set-opacity', value),
   stepScale: (delta) => ipcRenderer.invoke('overlay:step-scale', delta),
   setView: (patch) => ipcRenderer.invoke('view:set', patch),
   onScaleChanged: (cb) => ipcRenderer.on('scale-changed', (_e, value) => cb(value)),
