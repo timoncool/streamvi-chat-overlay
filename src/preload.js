@@ -13,6 +13,7 @@ contextBridge.exposeInMainWorld('svo', {
   dragStart: (mode, target) => ipcRenderer.invoke('overlay:drag-start', mode, target || 'chat'),
   dragEnd: () => ipcRenderer.invoke('overlay:drag-end'),
   toggleDemo: () => ipcRenderer.invoke('overlay:toggle-demo'),
+  clearChat: () => ipcRenderer.invoke('overlay:clear-chat'),
   setCounter: (patch) => ipcRenderer.invoke('counter:set', patch),
   resetCounter: () => ipcRenderer.invoke('counter:reset-bounds'),
   setCounterBounds: (b) => ipcRenderer.invoke('counter:set-bounds', b),

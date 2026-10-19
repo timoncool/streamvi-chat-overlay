@@ -16,14 +16,14 @@ const SIM_URL = pathToFileURL(path.join(__dirname, 'sim.html')).href;
 
 const STREAMVI_TOKEN = 'YOUR_TOKEN';
 const BASE = 'https://chat.streamvi.io/?lang=ru';
-const COLORS = 'background=%2314141400&color=%23F0E8DA&nameColor=%23D9A85F&messageBoxColor=%2300000000&scale=149&messageMargin=10&messageTime=true&messageTheme=compact&messageAlignment=top&messageAnimation=none&messageHiddenDelay=2&messagesHidden=none&messageIcon=platform&messageSound=false';
+const COLORS = 'background=%2314141400&color=%23F0E8DA&nameColor=%23D9A85F&messageBoxColor=%2300000000&scale=149&messageMargin=10&messageTime=true&messageTheme=compact&messageAlignment=top&messageAnimation=none&messageHiddenDelay=300&messageHidden=hide&messageIcon=platform&messageSound=false';
 
 // mode=widget без elements — ровно то, что уходит в эфир: прозрачный фон, без поля ввода.
 const PRESETS = {
   stream_widget: `${BASE}&mode=widget&${COLORS}&token=${STREAMVI_TOKEN}`,
   standalone_dark: `${BASE}&mode=standalone&${COLORS}&token=${STREAMVI_TOKEN}`,
   widget_input: `${BASE}&mode=widget&elements=input%2Cemoji&${COLORS}&token=${STREAMVI_TOKEN}`,
-  standalone_white: `${BASE}&mode=standalone&color=%23FFFFFF&background=%2314141400&nameColor=%23ADADAD&messageBoxColor=%2300000000&scale=145&messageMargin=100&messageTime=true&messageTheme=compact&messageAlignment=bottom&messageAnimation=fade&messageHiddenDelay=2&messagesHidden=none&messageIcon=all&token=${STREAMVI_TOKEN}`
+  standalone_white: `${BASE}&mode=standalone&color=%23FFFFFF&background=%2314141400&nameColor=%23ADADAD&messageBoxColor=%2300000000&scale=145&messageMargin=100&messageTime=true&messageTheme=compact&messageAlignment=bottom&messageAnimation=fade&messageHiddenDelay=300&messageHidden=hide&messageIcon=all&token=${STREAMVI_TOKEN}`
 };
 
 const DEFAULTS = {
@@ -55,7 +55,8 @@ const DEFAULTS = {
     demo: 'CommandOrControl+Alt+D',
     counter: 'CommandOrControl+Alt+V',
     zoomIn: 'CommandOrControl+Alt+=',
-    zoomOut: 'CommandOrControl+Alt+-'
+    zoomOut: 'CommandOrControl+Alt+-',
+    clearChat: 'CommandOrControl+Alt+C'
   }
 };
 
@@ -102,6 +103,7 @@ html, body { overflow: hidden !important; background: transparent !important; ma
 `;
 
 let cfg = loadConfig();
+migrateCleanupUrl();
 let win = null;
 let settingsWin = null;
 let tray = null;
@@ -307,6 +309,32 @@ function installMessageObserver() {
     window.__svoMsgObserver.observe(document.body, { childList: true, subtree: true });
   })()`;
   win.webContents.executeJavaScript(script).catch(() => {});
+}
+
+// Старый URL содержал параметр messagesHidden (с «s»), который виджет не читает.
+// Переносим его в messageHidden/messageHiddenDelay, иначе автоскрытие не работало.
+function migrateCleanupUrl() {
+  if (!cfg || typeof cfg.url !== 'string') return;
+  try {
+    const u = new URL(cfg.url);
+    if (!/(^|\.)streamvi\.io$/i.test(u.hostname)) return;
+    if (!u.searchParams.has('messagesHidden')) return;
+    u.searchParams.delete('messagesHidden');
+    if (!u.searchParams.has('messageHidden')) {
+      u.searchParams.set('messageHidden', 'hide');
+      u.searchParams.set('messageHiddenDelay', '300');
+    }
+    cfg.url = u.toString();
+    saveConfig();
+  } catch (_) { /* ignore */ }
+}
+
+function clearChatNow() {
+  if (!win || win.isDestroyed()) return false;
+  win.webContents.executeJavaScript(
+    `(() => { document.querySelectorAll('.message,.msg').forEach((n) => n.remove()); })()`
+  ).catch(() => {});
+  return true;
 }
 
 function backgroundCss(url) {
@@ -834,6 +862,7 @@ function registerHotkeys() {
   reg(hk.counter, () => toggleCounter(), 'counter');
   reg(hk.zoomIn, () => setScale(cfg.scale + 10), 'zoomIn');
   reg(hk.zoomOut, () => setScale(cfg.scale - 10), 'zoomOut');
+  reg(hk.clearChat, clearChatNow, 'clearChat');
   try { globalShortcut.register('CommandOrControl+Alt+Plus', () => setScale(cfg.scale + 10)); } catch (_) { /* ignore */ }
 }
 
@@ -845,6 +874,7 @@ function updateTrayMenu() {
     { label: cfg.locked ? 'Разблокировать (Ctrl+Alt+L)' : 'Закрепить (Ctrl+Alt+L)', click: toggleLock },
     { type: 'separator' },
     { label: 'Перезагрузить чат (Ctrl+Alt+R)', click: reloadChat },
+    { label: 'Очистить чат (Ctrl+Alt+C)', click: clearChatNow },
     { label: 'Сбросить размер и позицию (Ctrl+Alt+0)', click: resetBounds },
     { label: 'Демо-чат: симуляция (Ctrl+Alt+D)', type: 'checkbox', checked: demoMode, click: () => toggleDemo() },
     { label: 'Счётчик зрителей (Ctrl+Alt+V)', type: 'checkbox', checked: !!cfg.counter.enabled, click: () => toggleCounter() },
@@ -939,6 +969,7 @@ if (!gotLock) {
     ipcMain.handle('overlay:drag-start', (_event, mode, target) => startDrag(mode, target === 'counter' ? 'counter' : 'chat'));
     ipcMain.handle('overlay:drag-end', () => stopDrag());
     ipcMain.handle('overlay:toggle-demo', () => toggleDemo());
+    ipcMain.handle('overlay:clear-chat', () => clearChatNow());
     ipcMain.handle('overlay:set-scale', (_event, pct) => setScale(pct));
     ipcMain.handle('overlay:set-opacity', (_event, value) => {
       const op = Number(value);

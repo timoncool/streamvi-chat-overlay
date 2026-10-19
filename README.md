@@ -29,7 +29,8 @@ This app puts **the same widget that goes on air** into a frameless, transparent
 - **Any StreamVi widget URL** — the on-air `mode=widget` variant (no input box, transparent background) or any other preset.
 - **Real click-through** — the overlay never takes focus and never eats a click while locked.
 - **Move and resize** — a drag bar and a corner grip in edit mode; the window remembers its position and size.
-- **Hotkeys that work from the game** — lock, hide, reload, zoom, demo.
+- **Hotkeys that work from the game** — lock, hide, reload, zoom, demo, clear chat.
+- **Old messages auto-cleanup** — messages disappear after N minutes (Settings → «Очистка старых сообщений»), plus `Ctrl+Alt+C` to clear the chat now.
 - **Display settings** — time, platform icons, nicknames, message theme, alignment, animation, spacing.
 - **Colors** — text, nickname, per-message plate (with alpha) and chat background (with alpha).
 - **Scale** — 80–250 %, from the hotkeys, the edit bar or the settings window.
@@ -46,6 +47,7 @@ This app puts **the same widget that goes on air** into a frameless, transparent
 | Lock / unlock (clicks go to the game) | `Ctrl+Alt+L` |
 | Show / hide | `Ctrl+Alt+H` |
 | Reload chat | `Ctrl+Alt+R` |
+| Clear chat now | `Ctrl+Alt+C` |
 | Reset position and size | `Ctrl+Alt+0` |
 | Zoom in / out | `Ctrl+Alt+=` / `Ctrl+Alt+-` |
 | Demo chat (simulation) | `Ctrl+Alt+D` |

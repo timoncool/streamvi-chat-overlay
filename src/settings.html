@@ -193,6 +193,23 @@
   </div>
 
   <div class="card">
+    <label class="title">Очистка старых сообщений</label>
+    <div class="check" style="margin-bottom:8px">
+      <input type="checkbox" id="cleanupEnabled">
+      <div>
+        <label for="cleanupEnabled">Скрывать сообщения через время</label>
+        <div class="hint">StreamVi сам убирает старые сообщения — в эфире не остаётся вчерашний чат. Работает в режиме widget.</div>
+      </div>
+    </div>
+    <div class="line">
+      <label for="cleanupMinutes">Через, минут</label>
+      <input type="number" id="cleanupMinutes" min="1" max="720" step="1" value="5" style="width:80px">
+      <button id="cleanupClear">Очистить сейчас</button>
+    </div>
+    <div class="hint">«Очистить сейчас» — Ctrl+Alt+C. Автоскрытие не трогает уже показанное, пока не пройдёт время.</div>
+  </div>
+
+  <div class="card">
     <label class="title">Цвета</label>
     <div class="line">
       <label for="textColor">Текст</label>
@@ -239,6 +256,7 @@
       <tr><td>Заблокировать / разблокировать</td><td><kbd>Ctrl</kbd> + <kbd>Alt</kbd> + <kbd>L</kbd></td></tr>
       <tr><td>Показать / скрыть оверлей</td><td><kbd>Ctrl</kbd> + <kbd>Alt</kbd> + <kbd>H</kbd></td></tr>
       <tr><td>Перезагрузить чат</td><td><kbd>Ctrl</kbd> + <kbd>Alt</kbd> + <kbd>R</kbd></td></tr>
+      <tr><td>Очистить чат</td><td><kbd>Ctrl</kbd> + <kbd>Alt</kbd> + <kbd>C</kbd></td></tr>
       <tr><td>Сбросить размер и позицию</td><td><kbd>Ctrl</kbd> + <kbd>Alt</kbd> + <kbd>0</kbd></td></tr>
       <tr><td>Демо-чат (симуляция)</td><td><kbd>Ctrl</kbd> + <kbd>Alt</kbd> + <kbd>D</kbd></td></tr>
       <tr><td>Счётчик зрителей</td><td><kbd>Ctrl</kbd> + <kbd>Alt</kbd> + <kbd>V</kbd></td></tr>
@@ -294,6 +312,11 @@
     el('animation').value = param('messageAnimation', 'none');
     el('margin').value = param('messageMargin', '10');
     el('marginValue').textContent = el('margin').value;
+    const cleanupHidden = param('messageHidden', 'none');
+    el('cleanupEnabled').checked = cleanupHidden === 'hide';
+    const cleanupDelay = parseInt(param('messageHiddenDelay', '300'), 10);
+    const cleanupMin = Math.max(1, Math.min(720, Math.round((Number.isFinite(cleanupDelay) ? cleanupDelay : 300) / 60)));
+    el('cleanupMinutes').value = cleanupMin;
     const snd = state.cfg.sound || {};
     el('showSound').checked = !!snd.enabled;
     el('soundFile').value = snd.file || '';
@@ -395,6 +418,23 @@
     clearTimeout(marginTimer);
     marginTimer = setTimeout(() => window.svo.setView({ param: { messageMargin: value } }), 300);
   });
+
+  function pushCleanup() {
+    const on = el('cleanupEnabled').checked;
+    let min = parseInt(el('cleanupMinutes').value, 10);
+    if (!Number.isFinite(min) || min < 1) min = 5;
+    if (min > 720) min = 720;
+    el('cleanupMinutes').value = min;
+    window.svo.setView({
+      param: {
+        messageHidden: on ? 'hide' : 'none',
+        messageHiddenDelay: String(min * 60)
+      }
+    });
+  }
+  el('cleanupEnabled').addEventListener('change', pushCleanup);
+  el('cleanupMinutes').addEventListener('change', pushCleanup);
+  el('cleanupClear').addEventListener('click', () => window.svo.clearChat());
 
   let colorTimer = null;
   function pushColors() {
